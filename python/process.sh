@@ -11,7 +11,7 @@ CMSE_LIB=${SR_PATH}/secure_runtime_CMSE_lib.o
 
 OUTPUT_PATH=${SR_PATH}
 
-./harm_rw -c ${CMSE_LIB} -p ${OUTPUT_PATH} \
+python main.py -c ${CMSE_LIB} -p ${OUTPUT_PATH} -e 0x20000 \
 	-i ${BASE_PATH}/$1.axf -o ${BASE_PATH}/$1_s.bin
 
 if [ $? != 0 ]; then
