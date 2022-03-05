@@ -171,7 +171,6 @@ class Symbol:
 
                     if literal_address not in self.__literal_addr:
                         self.__literal_addr[literal_address] = 4
-                        print("{}:{}".format(self.__name, self.__literal_addr))
 
                     ir = LoadLiteralIR(bufp)
                     ir.float_reg = inst.id == ARM_INS_VLDR
@@ -247,9 +246,7 @@ class Symbol:
         else:
             ir = IR(bufp, inst.bytes)
 
-        if inst.mnemonic == '.byte':
-            print("0x%x:\t%s\t%s" % (inst.address, inst.mnemonic, inst.op_str))
-        else:
+        if inst.mnemonic != '.byte':
             ir.cond = inst.cc
 
         return pos, ir

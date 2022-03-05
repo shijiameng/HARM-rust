@@ -92,7 +92,6 @@ def do_relocate(fw: FirmwareIR, ir, reloc, *, encode_fptr=True, offset=0):
                 func_ptr_tbl_sz += 4
             else:
                 new_value = fw.fn_map[value - 1]["ir"].addr
-                print(f"new_value:{hex(new_value)}")
     else:
         if value not in fw.fn_map:
             for k in fw.fn_map:
@@ -345,19 +344,8 @@ def main(argv):
 
         for fn in fw.child_iter():
             if isinstance(fn, FunctionIR):
-                # print(fn)
                 new_fn_total_size += fn.len
                 fn_total += 1
-                # if hasattr(fn, "child_iter"):
-                #     for ir in fn.child_iter():
-                #         print(ir)
-            # elif isinstance(fn, BranchTableIR):
-            #     print("BranchTable: %s (referred by %s %s)" % (hex(fn.addr), fn.ref_by_load, fn.ref_by_branch))
-            #     print(fn)
-            # else:
-            #     print(fn)
-            #     print(fn.code)
-            # print()
 
         fw.save_as_file(output_file)
 

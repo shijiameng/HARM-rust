@@ -78,8 +78,6 @@ def export_text_section(symtab, base, code):
                 raw_symbols.append(s)
             elif s['st_info']['type'] == 'STT_NOTYPE' and s['st_info']['bind'] == 'STB_GLOBAL' and \
                     not (s.name[-6:] == '_start' or s.name[-4:] == '_end'):
-                if s.name == '_etext':
-                    print("_etext: %s" % hex(s['st_value']))
                 raw_symbols.append(s)
             else:
                 pass
@@ -247,14 +245,11 @@ def export_fn_symbols(elf):
                 raw_symbols.append(s)
             elif s['st_info']['type'] == 'STT_NOTYPE' and s['st_info']['bind'] == 'STB_GLOBAL' and \
                     not (s.name[-6:] == '_start' or s.name[-4:] == '_end'):
-                if s.name == '_etext':
-                    print("_etext: %s" % hex(s['st_value']))
                 raw_symbols.append(s)
             else:
                 pass
         elif data_section and s['st_value'] in data_range and s['st_info']['type'] == 'STT_OBJECT':
             raw_symbols.append(s)
-            print(s.name)
         else:
             pass
 
@@ -266,8 +261,6 @@ def export_fn_symbols(elf):
         s = raw_symbols[i]
         st_value = s['st_value'] & ~1 if s['st_info']['type'] == 'STT_FUNC' else s['st_value']
         st_size = s['st_size']
-
-        print(s.name)
 
         if prev_symbol and s['st_info']['type'] in ('STT_OBJECT', 'STT_FUNC') and \
                 prev_symbol['st_info']['type'] in ('STT_OBJECT', 'STT_FUNC') and \
