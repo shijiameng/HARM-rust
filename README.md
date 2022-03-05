@@ -31,7 +31,9 @@ To start with use `harm-rw` command:
 
 Run `setup.sh`:
 
-* `./setup.sh`
+```bash
+$ ./setup.sh
+```
   
 Activate the virtualenv (from `python` directory of the repository):
 
@@ -43,10 +45,20 @@ $ source harm/bin/activate
 
 `samples` directory contains some sample firmware ELF images.
 
-Example, create an instrumented version of `dijkstra`:
+Example, create an instrumented version of `qsort`:
 
 ```bash
-(harm) $ harm-rw -c secure_service_CMSE_lib.o -i samples/dijkstra.axf -p /path/to/metadata -o dijkstra.bin
+(harm) $ ./harm-rw -c secure_service_CMSE_lib.o -i samples/qsort.axf -p /path/to/metadata -o qsort.bin -e 0x20000
 ```
 
-## Secure Runtime
+### Troubleshooting
+
+A bug exists in keystone core library causes failure when recompile the binary. Please copy `python/patches/libkeystone.so` to the virtual environment:
+
+```bash
+$ cp python/patches/libkeystone.so python/harm/lib/python3.8/site-packages/keystone 
+```
+
+## Secure Runtime (Rust Prototype)
+
+To be released in next version.
