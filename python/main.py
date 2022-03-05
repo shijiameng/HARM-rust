@@ -1,5 +1,7 @@
+import argparse
 import getopt
 import sys
+from tokenize import Hexnumber
 
 from elftools.elf.elffile import ELFFile
 
@@ -253,39 +255,39 @@ def output_c_syntax(fw, path):
 
 
 def main(argv):
-    input_file = ''
-    output_file = ''
-    output_path = ''
-    entry_point = 0x20000
-    cmse_lib = ''
+    input_file = argv.input_file
+    output_file = argv.output_file
+    output_path = argv.metadata_path
+    entry_point = int(argv.entry_point, base=16)
+    cmse_lib = argv.cmse_lib
     has_rtos = False
     do_inst = True
 
-    try:
-        opts, args = getopt.getopt(argv, 'c:e:hi:o:p:',
-                                   ['--cmse-lib', 'entry-point=', 'input-file=', 'output-file=', 'output-path', 'rtos',
-                                    'no-instrument'])
-    except getopt.GetoptError:
-        sys.exit(1)
+    # try:
+    #     opts, args = getopt.getopt(argv, 'c:e:hi:o:p:',
+    #                                ['--cmse-lib', 'entry-point=', 'input-file=', 'output-file=', 'output-path', 'rtos',
+    #                                 'no-instrument'])
+    # except getopt.GetoptError:
+    #     sys.exit(1)
 
-    for opt, arg in opts:
-        if opt in ('-c', '--cmse-lib'):
-            cmse_lib = arg
-        elif opt in ('-e', '--entry-point'):
-            entry_point = int(arg, base=16)
-        elif opt in ('-i', '--input-file'):
-            input_file = arg
-        elif opt in ('-o', '--output-file'):
-            output_file = arg
-        elif opt in ('-p', '--output-path'):
-            output_path = arg
-        elif opt == '--rtos':
-            has_rtos = True
-        elif opt == '--no-instrument':
-            do_inst = False
-        else:
-            print('Invalid argument - %s' % opt)
-            sys.exit(1)
+    # for opt, arg in opts:
+    #     if opt in ('-c', '--cmse-lib'):
+    #         cmse_lib = arg
+    #     elif opt in ('-e', '--entry-point'):
+    #         entry_point = int(arg, base=16)
+    #     elif opt in ('-i', '--input-file'):
+    #         input_file = arg
+    #     elif opt in ('-o', '--output-file'):
+    #         output_file = arg
+    #     elif opt in ('-p', '--output-path'):
+    #         output_path = arg
+    #     elif opt == '--rtos':
+    #         has_rtos = True
+    #     elif opt == '--no-instrument':
+    #         do_inst = False
+    #     else:
+    #         print('Invalid argument - %s' % opt)
+    #         sys.exit(1)
 
     with open(cmse_lib, 'rb') as f:
         elf = ELFFile(f)
@@ -361,4 +363,13 @@ def main(argv):
     return 0
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    argp = argparse.ArgumentParser(description='Off-device Binary Analysis and Rewriting Tool')
+    argp.add_argument('-c', '--cmse-lib', dest='cmse_lib', type=str, help='CMSE library to load')
+    argp.add_argument('-e', '--entry-point', dest='entry_point', type=str, help='Entry point of target firmware')
+    argp.add_argument('-i', '--input-file', type=str, dest='input_file', help='Target firmware (in ELF format)')
+    argp.add_argument('-o', '--output-file', type=str, dest='output_file', help='Output name of instrumented target firmware')
+    argp.add_argument('-p', '--metadata-output-path', dest='metadata_path', type=str, help='Output path of metadata files')
+
+    argv = argp.parse_args()
+
+    sys.exit(main(argv))
