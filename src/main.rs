@@ -1,7 +1,5 @@
-mod sandbox {
-    pub mod sandbox;
-}
-use crate::sandbox::sandbox::sandbox::Sandbox;
+pub mod sandbox;
+use sandbox::Sandbox;
 fn main() {
     println!("Hello, world!");
     Sandbox::say_hello();
