@@ -1,9 +1,9 @@
-// Ideas for Sandbox module conversion
-
+use super::objects::Object;
 use rbtree::RBTree;
+use std::cmp::Ordering;
 
-pub struct Sandbox {
-    rb_tree: Option<RBTree<u32, u32>>,
+pub struct Sandbox<'a> {
+    rb_tree: RBTree<u32, Object<'a>>,
     size: u32,
     buf_ptr: u32,
     base: u32,
@@ -11,11 +11,34 @@ pub struct Sandbox {
     capacity: u32,
 }
 
-impl Sandbox {
+#[derive(Eq)]
+struct Key {
+    key: u32,
+}
+
+impl Ord for Key {
+    fn cmp(&self, other: &Self) -> Ordering {
+        Ordering::Equal
+    }
+}
+
+impl PartialOrd for Key {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Ordering::Equal)
+    }
+}
+
+impl PartialEq for Key {
+    fn eq(&self, other: &Self) -> bool {
+        false
+    }
+}
+
+impl <'a> Sandbox<'a> {
     // sandbox_create
     pub fn new(start: u32, size: u32) -> Self {
         Sandbox {
-            rb_tree: None,
+            rb_tree: RBTree::new(),
             size,
             base: start,
             used: 0,
@@ -27,9 +50,6 @@ impl Sandbox {
     fn align(&self, x: u32, a: u32) -> u32 {
         ((x) + ((a) - 1)) & !((a) - 1)
     }
-    pub fn say_hello() {
-        println!("hello from sandbox");
-    }
     // sandbox_reset
     pub fn reset(&mut self) {
         self.buf_ptr = self.base;
@@ -38,7 +58,7 @@ impl Sandbox {
     }
 
     // sandbox_bucket_allocate
-    pub fn put_object(&mut self, size: u16, align: u32 /* rb node */) -> u32 {
+    pub fn put_object(&mut self, size: u16, align: u32, node: Object<'a>) -> u32 {
         let mut new_base = self.buf_ptr;
         let mut len: u32;
 
@@ -52,7 +72,8 @@ impl Sandbox {
             self.capacity -= len;
             self.used += len;
             self.buf_ptr += len;
-            // TODO insert node in self.rb_tree
+            
+            self.rb_tree.insert(new_base, node);
         } else {
             new_base = 0;
         }
@@ -60,7 +81,8 @@ impl Sandbox {
     }
 
     // sandbox_get_object
-    pub fn get_object(&self, address: u32) /* Return Option<rb node> */ {}
+    pub fn get_object(&self, address: u32) -> Option<&Object<'a>> {
+        self.rb_tree.get(&address)
+    }
 
-    // there should be no need for sandbox_destroy
 }

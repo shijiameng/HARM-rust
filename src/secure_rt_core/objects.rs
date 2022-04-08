@@ -1,6 +1,5 @@
 use super::adjustment::{AdjustItem, Branch};
 use super::codeblock::CodeBlock;
-
 #[repr(C)]
 pub struct Callsite {
     pub offset: u16,
