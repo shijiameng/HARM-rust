@@ -61,4 +61,4 @@ $ cp python/patches/libkeystone.so python/harm/lib/python3.8/site-packages/keyst
 
 ## Secure Runtime (Rust Prototype)
 
-To be released in next version.
+Secure Runtime core has been implemented.
