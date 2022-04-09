@@ -1,14 +1,13 @@
 use super::objects::Object;
+use super::codeblock::CodeBlock;
 use rbtree::RBTree;
 use std::cmp::Ordering;
 
 pub struct Sandbox<'a> {
-    rb_tree: RBTree<u32, Object<'a>>,
-    size: u32,
-    buf_ptr: u32,
-    base: u32,
-    used: u32,
-    capacity: u32,
+    rb_tree: RBTree<u32, &'a Object<'a>>,
+    memory: &'a mut[u8],
+    next_i: usize,
+    capacity: usize,
 }
 
 #[derive(Eq)]
@@ -36,14 +35,13 @@ impl PartialEq for Key {
 
 impl <'a> Sandbox<'a> {
     // sandbox_create
-    pub fn new(start: u32, size: u32) -> Self {
+    pub fn new(memory: &'a mut [u8]) -> Self {
+        let sandbox_size = memory.len();
         Sandbox {
             rb_tree: RBTree::new(),
-            size,
-            base: start,
-            used: 0,
-            capacity: size,
-            buf_ptr: start,
+            memory,
+            next_i: 0,
+            capacity: sandbox_size,
         }
     }
 
@@ -52,37 +50,39 @@ impl <'a> Sandbox<'a> {
     }
     // sandbox_reset
     pub fn reset(&mut self) {
-        self.buf_ptr = self.base;
-        self.used = 0;
-        self.capacity = self.size;
+        let sbox_len = self.memory.len();
+        self.next_i = 0;
+        self.capacity = sbox_len;
+    }
+
+    pub fn get_block(&mut self, block_size: usize, align_bits: u8) -> Result<CodeBlock, ()> {
+        let align_bytes: usize = 1 << align_bits;
+        let block_base: usize = (self.next_i + (align_bytes - 1)) & !(align_bytes - 1);
+        let actual_size = block_base - self.next_i + block_size;
+
+        if self.capacity >= actual_size {
+            self.capacity -= actual_size;
+            self.next_i += actual_size;
+            Ok(CodeBlock::from(&mut self.memory[block_base .. block_base + block_size]))
+        } else {
+            Err(())
+        }
     }
 
     // sandbox_bucket_allocate
-    pub fn put_object(&mut self, size: u16, align: u32, node: Object<'a>) -> u32 {
-        let mut new_base = self.buf_ptr;
-        let mut len: u32;
+    pub fn put_object(&mut self, node: &'a Object<'a>, align_bits: u8) -> Result<CodeBlock, ()> {
+        let object_address = node.get_address().unwrap();
+        let mut block = self.get_block(node.size(), align_bits).unwrap();
 
-        if align == 2 {
-            new_base = new_base | 0x2u32;
-        } else {
-            new_base = self.align(new_base, align);
-        }
-        len = new_base - self.buf_ptr + (size as u32);
-        if self.capacity > len {
-            self.capacity -= len;
-            self.used += len;
-            self.buf_ptr += len;
-            
-            self.rb_tree.insert(new_base, node);
-        } else {
-            new_base = 0;
-        }
-        new_base
+        block.fill(node.code.unwrap());
+        self.rb_tree.insert(block.get_address(0).unwrap() as u32, node);
+
+        Ok(block)
     }
 
     // sandbox_get_object
-    pub fn get_object(&self, address: u32) -> Option<&Object<'a>> {
-        self.rb_tree.get(&address)
-    }
+    // pub fn get_object(&self, address: u32) -> Option<&Object<'a>> {
+    //     // self.rb_tree.get(&address)
+    // }
 
 }
