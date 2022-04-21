@@ -13,19 +13,30 @@ pub struct RBNode {
     pub parent: Option<Rc<RefCell<RBNode>>>,
     pub l_child: Option<Rc<RefCell<RBNode>>>,
     pub r_child: Option<Rc<RefCell<RBNode>>>,
-    pub data: u32,
+    pub data: String, // CHANGE ME
     pub key: u32,
     pub color: Color,
 }
 
 impl RBNode {
+    pub fn new() -> Self {
+        Self {
+            parent: None,
+            r_child: None,
+            l_child: None,
+            data: String::from(""),
+            key: 0,
+            color:
+            Color::Black
+        }
+    }
     pub fn from(this: Rc<RefCell<Self>>) -> Self {
         let this = this.borrow();
         Self {
             parent: this.parent.clone(),
             l_child: this.l_child.clone(),
             r_child: this.r_child.clone(),
-            data: this.data,
+            data: this.data.clone(),
             key: this.key,
             color: this.color,
         }
@@ -41,8 +52,7 @@ impl RBNode {
         if let Some(parent) = &self.parent {
             let parent = parent.borrow();
             if let Some(l_child) = &parent.l_child {
-                let l_child = l_child.borrow();
-                return self.key == l_child.key;
+                return self.key == l_child.borrow().key;
             }
         }
         false
@@ -52,8 +62,7 @@ impl RBNode {
         if let Some(parent) = &self.parent {
             let parent = parent.borrow();
             if let Some(r_child) = &parent.r_child {
-                let r_child = r_child.borrow();
-                return self.key == r_child.key;
+                return self.key == r_child.borrow().key;
             }
         }
         false
