@@ -1,6 +1,8 @@
 import argparse
 import getopt
 import sys
+import yaml
+
 from tokenize import Hexnumber
 
 from elftools.elf.elffile import ELFFile
@@ -159,6 +161,62 @@ def output_revise_item(ir, fn, objects):
                    (repr(ir), ir.parent, ir.addr - fn.addr, data), 1
         else:
             return None
+
+def output_revise_yaml(ir, fn, objects, output):
+    if hasattr(ir, "child_iter"):
+        for i in ir.child_iter():
+            output_revise_yaml(i, fn, objects, output)
+    else:
+        item = None
+        if isinstance(ir, BranchIR):
+            ref = ir.ref
+            if isinstance(ref, FunctionIR):
+                item = {
+                    "src_offset": ir.addr - fn.addr,
+                    "dst_index": objects.index(ref),
+                    "dst_offset": 0,
+                }
+            elif ref.parent is not fn:
+                item = {
+                    "src_offset": ir.addr - fn.addr,
+                    "dst_index": objects.index(ref.parent),
+                    "dst_offset": ref.addr - ref.parent.addr
+                }
+            else:
+                pass
+            if item:
+                output.append(item)
+
+def output_object_yaml(objects):
+    output = []
+    for fn in objects:
+        yaml_out = fn.output_yaml_desp(objects.index(fn))
+        if isinstance(fn, FunctionIR):
+            if hasattr(fn, "irq"):
+                yaml_out["isr"] = fn.irq
+            for ir in fn.child_iter():
+                output_revise_yaml(ir, fn, objects, yaml_out["reloc_items"])
+        output.append(yaml_out)
+    return output
+
+
+def output_objects_yaml(fw, path):
+    objects = list(filter(lambda x: isinstance(x, FunctionIR) or isinstance(x, VectorIR),
+                            [o for o in fw.child_iter()]))
+    with open(path + "/objects.yaml", 'w') as f:
+        output = output_object_yaml(objects)
+        f.write(yaml.dump(output, allow_unicode=True))
+
+    with open(path + "/callsites.yaml", "w") as f:
+        output = []
+        for fn in objects[1:]:
+            callsite = { "caller": objects.index(fn), "offsets": [] }
+            for ir in fn.child_iter():
+                if isinstance(ir, LoadReturnIndexIR):
+                    callsite["offsets"].append(ir.ret_offset)
+            if callsite["offsets"]:
+                output.append(callsite)
+        f.write(yaml.dump(output, allow_unicode=True))
 
 
 def output_c_syntax(fw, path):
@@ -352,7 +410,8 @@ def main(argv):
         fw.save_as_file(output_file)
 
         print("New firmware length: %d (%d) bytes" % (fw.len, len(fw.code)))
-        output_c_syntax(fw, output_path)
+        # output_c_syntax(fw, output_path)
+        output_objects_yaml(fw, output_path)
         print("Function pointer table size: %d" % func_ptr_tbl_sz)
         print("Total function size (original): %d" % orig_fn_total_size)
         print("Total function size (new): %d" % new_fn_total_size)

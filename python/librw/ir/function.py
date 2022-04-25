@@ -142,3 +142,15 @@ class FunctionIR(BlockIR):
 
     def get_ir(self, offset):
         return self.__ir_map[offset]
+
+    def output_yaml_desp(self, idx):
+        desp = {
+            "index":  idx,
+            "name": self.name,
+            "kind": "Function",
+            "address": self.addr,
+            "size": self.len,
+            "isr": 0,
+            "reloc_items": list()
+        }
+        return desp
