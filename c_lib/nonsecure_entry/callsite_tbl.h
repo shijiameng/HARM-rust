@@ -1,0 +1,6 @@
+#ifndef CALLSITE_TBL_H
+#define CALLSITE_TBL_H
+
+#define CALLSITE_TABLE_SIZE 0
+
+#endif /* CALLSITE_TBL_H */
