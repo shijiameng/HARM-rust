@@ -1,12 +1,6 @@
-use super::adjustment::{AdjustItem, Branch};
-
-pub const NUM_OF_BRANCHES: usize = 1;
+use super::objects::Callsite;
 
 #[no_mangle]
-pub static BRANCHES: [AdjustItem::<Branch>; NUM_OF_BRANCHES] = [
-    // dummy branch
-    AdjustItem::<Branch> {
-        offset: 0,
-        item: Branch(0, 0),
-    },
-];
+pub static CALLSITE_TBL: [Callsite; NUM_OF_CALLSITES] = [];
+
+pub const NUM_OF_CALLSITES: usize = 0;
