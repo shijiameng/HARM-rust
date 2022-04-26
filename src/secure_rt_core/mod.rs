@@ -5,7 +5,6 @@ pub mod codeblock;
 pub mod rb_tree;
 // extern crate alloc;
 
-use core::mem::MaybeUninit;
 use core::option::Option;
 use cortex_m;
 
@@ -13,14 +12,13 @@ mod obj_tbl;
 mod adj_tbl;
 mod ret_tbl;
 
-use sandbox::Sandbox;
+// pub mod adjustment;
+// pub mod objects;
+// pub mod sandbox;
+// pub mod codeblock;
+
+use sandbox::SandBox;
 use objects::*;
-
-#[link_section = ".nonsecure.code"]
-static NONSECURE_FLASH: MaybeUninit<[u8; 1024]> = MaybeUninit::uninit();
-
-#[link_section = ".nonsecure.sandbox"]
-static mut NONSECURE_SANDBOX: MaybeUninit<[u8; 1024]> = MaybeUninit::uninit();
 
 static mut SHUFFLED_SEQUENCE: [u16; obj_tbl::NUM_OF_OBJECTS] = [0u16; obj_tbl::NUM_OF_OBJECTS];
 
@@ -37,7 +35,7 @@ fn init() {
 fn update_dispatch_table(index: usize, new_addr: usize) {
     unsafe {
         let mut dispatch_tbl = obj_tbl::DISPATCH_TBL.assume_init();
-        dispatch_tbl[index] = new_addr;
+        dispatch_tbl[index] = new_addr as u32;
     }
 }
 
@@ -47,118 +45,134 @@ fn update_vtor_register(offset: u32) {
     }
 }
 
-fn do_shuffle(sbox: &mut Sandbox, object: &Object, is_vector: bool) -> usize {
-    // Get code block from the flash memory
-    let orign_addr = object.get_address().unwrap();
-    // Allocate a code block from the sandbox
-    let align_bits = if is_vector { 7 } else if orign_addr & !3 == orign_addr { 2 } else { 1 };
-    let mut new_cb = sbox.get_block(object.size as usize, align_bits).unwrap();
-    
-    new_cb.fill(&object.code.unwrap()).unwrap();
-    new_cb.get_address(0).unwrap()
-}
-
-fn shuffle(sbox: &mut Sandbox, brk_point: Option<usize>) -> Option<usize> {
+fn shuffle(sbox: &mut SandBox, retaddr: Option<usize>) -> Option<usize> {
     let seq = get_shuffled_sequence();
-    let mut ret_addr: Option<usize> = None;
+    let mut new_retaddr: Option<usize> = None;
 
     sbox.reset();
 
     for i in 0 .. seq.len() {
         let obj_i = seq[i] as usize;
-        let object = get_object(obj_i).unwrap();
-        let brk_offset = {
-            if brk_point.is_some() && ret_addr.is_none() {
-                let brk_addr = brk_point.unwrap();
-                let obj_addr = object.get_instance_address().unwrap();
-                if brk_addr >= obj_addr && brk_addr < obj_addr + object.size() {
-                    Some(brk_addr - obj_addr)
+        let object = &obj_tbl::OBJECTS[obj_i];
+        let ret_offset = match object {
+            ObjectKind::Function(obj) => {
+                if retaddr.is_some() && new_retaddr.is_none() {
+                    let obj_addr = obj.get_instance_address();
+                    let ret_addr = retaddr.unwrap();
+                    if ret_addr >= obj_addr && ret_addr < obj_addr + obj.get_size() {
+                        Some(ret_addr - obj_addr)
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
-            } else {
-                None
-            }
+            },
+
+            _ => None,
         };
 
-        let new_addr = do_shuffle(sbox, &object, obj_i == 0);
-
+        let new_addr = sbox.push(object).unwrap();
         update_dispatch_table(obj_i, new_addr);
 
-        if let Some(offset) = brk_offset {
-            ret_addr = Some(new_addr + offset);
+        if let Some(offset) = ret_offset {
+            new_retaddr = Some(offset + new_addr);
         }
     }
 
-    ret_addr
+    new_retaddr
 }
 
 fn do_adjust(object: &Object) {
-    if object.adjust_items.is_none() {
+    let reloc_items = object.get_reloc_items();
+    if reloc_items.is_none() {
         return;
     }
 
-    let adjust_items = object.adjust_items.unwrap();
-    let mut nonsecure_sandbox = unsafe { NONSECURE_FLASH.assume_init() };
-    let mut cb = object.get_instance(&mut nonsecure_sandbox[..]);
-    
+    let mut cb = object.get_instance().unwrap();
+    let adjust_items = reloc_items.unwrap();
+
     for i in 0 .. adjust_items.len() {
         let adjust_item = &adjust_items[i];
-        let offset = adjust_item.offset as usize;
+        let offset = adjust_item.0 as usize;
         let src_addr = cb.get_address(offset).unwrap();
         let src_code = cb.read32(offset).unwrap();
-        let branch = &adjust_item.item;
-        let target_index = branch.1 as usize;
-        let target_offset = branch.0 as usize;
-        let target_object = get_object(target_index).unwrap();
-        let dst_addr = target_object.get_instance_address().unwrap();
-        let new_code = adjustment::adjust_direct_branch(src_code, src_addr, dst_addr + target_offset);
-        cb.write32(offset, new_code).unwrap();
+        // let branch = &adjust_item.item;
+        let target_index = adjust_item.1 as usize;
+        let target_offset = adjust_item.0 as usize;
+
+        if let ObjectKind::Function(target_func) = &obj_tbl::OBJECTS[target_index] {
+            let dst_addr = target_func.get_instance_address();
+            let new_code = adjustment::adjust_direct_branch(src_code, src_addr, dst_addr + target_offset);
+            cb.write32(offset, new_code).unwrap();
+        }
     }
 }
 
 fn ref_adjust() {
-    let vector_obj = &obj_tbl::OBJECTS[0];
-    update_vtor_register(vector_obj.get_instance_address().unwrap() as u32);
+    // update each entry of vector table
+    match &obj_tbl::OBJECTS[0] {
+        ObjectKind::VectorTable(ns_vector_tbl) => {
+            let mut ns_vector_inst = ns_vector_tbl.get_instance().unwrap();
+            
+            for i in 0 .. obj_tbl::NUM_OF_VECTORS {
+                if let ObjectKind::Function(isr) = &*obj_tbl::VECTORS[i] {
+                    let ns_vector_addr = isr.get_instance_address();
+                    ns_vector_inst.write32((i + 1) >> 2, (ns_vector_addr & 1usize) as u32).unwrap();
+                }
+            }
 
+            update_vtor_register(ns_vector_tbl.get_instance_address() as u32);
+        },
+
+        _ => unreachable!(),
+    }
+
+    // update references in each function
     for i in 1 .. obj_tbl::NUM_OF_OBJECTS {
         let object = &obj_tbl::OBJECTS[i];
-        do_adjust(object);
+        match object {
+            ObjectKind::Function(ns_func_obj) => do_adjust(ns_func_obj),
+            _ => unreachable!(),
+        }
     }
 }
 
 
-pub fn take_sandbox<'a>(memory: &'a mut [u8]) -> Sandbox<'a> {
-    Sandbox::new(memory)
+pub unsafe fn take_sandbox<'a>(address: usize, length: usize) -> SandBox<'a> {
+    SandBox::take(address, length)
 }
 
-pub fn get_object<'a>(index: usize) -> Option<&'a Object<'a>> {
-    if index < obj_tbl::NUM_OF_OBJECTS {
-        Some(&obj_tbl::OBJECTS[index])
-    } else {
-        None
-    }
-}
+// pub fn get_object<'a>(index: usize) -> Option<&'a ObjectKind> {
+//     if index < obj_tbl::NUM_OF_OBJECTS {
+//         Some(&obj_tbl::OBJECTS[index])
+//     } else {
+//         None
+//     }
+// }
 
 
-pub fn start() {
+pub fn start(sandbox_addr: usize, length: usize) -> ! {
 
     init();
 
-    let mut sandbox_mem = unsafe { NONSECURE_SANDBOX.assume_init() };
-    let mut sandbox = take_sandbox(&mut sandbox_mem);
+    let mut sandbox = unsafe { take_sandbox(sandbox_addr, length) };
     let ns_vector_obj = &obj_tbl::OBJECTS[0];
 
-    shuffle(&mut sandbox, None).unwrap();
+    shuffle(&mut sandbox, None);
     ref_adjust();
 
-    let ns_vector_cb = ns_vector_obj.get_instance(&mut sandbox_mem);
-    let msp = ns_vector_cb.read32(0).unwrap();
+    if let ObjectKind::VectorTable(ns_vector_tbl) = ns_vector_obj {
+        let ns_vector_inst = ns_vector_tbl.get_instance().unwrap();
+        let msp = ns_vector_inst.read32(0).unwrap();
 
-    unsafe {
-        cortex_m::register::msp::write_ns(msp);
-        let ns_reset_vector = (ns_vector_cb.get_address(4).unwrap() & !1) as u32;
-        cortex_m::asm::bx_ns(ns_reset_vector);
-        unreachable!()
+        unsafe {
+            cortex_m::register::msp::write_ns(msp);
+            let ns_reset_vector = (ns_vector_inst.read32(4).unwrap() & !1) as u32;
+            cortex_m::asm::bx_ns(ns_reset_vector);
+            unreachable!();
+        }
     }
+
+    unreachable!();
 }

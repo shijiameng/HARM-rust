@@ -1,13 +1,15 @@
 use core::mem::size_of_val;
+use core::slice::from_raw_parts_mut;
 
+#[repr(C)]
 pub struct CodeBlock<'a> {
     pub block: &'a mut[u8],
 }
 
 impl<'a> CodeBlock<'a> {
-    pub fn from(memory: &'a mut[u8]) -> CodeBlock<'a> {
+    pub unsafe fn from(address: usize, length: usize) -> CodeBlock<'a> {
         CodeBlock {
-            block: memory,
+            block: from_raw_parts_mut(address as *mut u8, length),
         }
     }
 

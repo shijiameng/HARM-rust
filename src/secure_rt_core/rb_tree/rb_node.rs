@@ -1,6 +1,9 @@
-use std::cell::RefCell;
-use std::cell::RefMut;
-use std::rc::Rc;
+extern crate alloc;
+
+use core::cell::RefCell;
+use core::cell::RefMut;
+use alloc::rc::Rc;
+use core::marker::Copy;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum Color {
@@ -9,28 +12,29 @@ pub enum Color {
 }
 
 #[derive(Clone)]
-pub struct RBNode {
-    pub parent: Option<Rc<RefCell<RBNode>>>,
-    pub l_child: Option<Rc<RefCell<RBNode>>>,
-    pub r_child: Option<Rc<RefCell<RBNode>>>,
-    pub data: String, // CHANGE ME
-    pub key: u32,
+pub struct RBNode<K, V> {
+    pub parent: Option<Rc<RefCell<RBNode<K, V>>>>,
+    pub l_child: Option<Rc<RefCell<RBNode<K, V>>>>,
+    pub r_child: Option<Rc<RefCell<RBNode<K, V>>>>,
+    pub data: V, // CHANGE ME
+    pub key: K,
     pub color: Color,
 }
 
-impl RBNode {
-    pub fn new() -> Self {
+impl<K, V> RBNode<K, V> 
+        where K: Clone + PartialEq + PartialOrd + core::marker::Copy, V: Clone {
+    pub fn new(key: K, data: V) -> Self {
         Self {
             parent: None,
             r_child: None,
             l_child: None,
-            data: String::from(""),
-            key: 0,
-            color:
-            Color::Black
+            color: Color::Black,
+            data,
+            key,
         }
     }
     pub fn from(this: Rc<RefCell<Self>>) -> Self {
+        // where K_: Clone + PartialEq + PartialOrd + Copy, V_: Clone {
         let this = this.borrow();
         Self {
             parent: this.parent.clone(),

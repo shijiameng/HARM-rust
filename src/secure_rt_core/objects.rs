@@ -1,53 +1,65 @@
-use super::adjustment::{AdjustItem, Branch};
+use super::adjustment::Branch;
 use super::codeblock::CodeBlock;
+use super::{obj_tbl, adj_tbl};
+
+use core::ops::Deref;
+use core::slice;
+
+
 #[repr(C)]
 pub struct Callsite {
     pub offset: u16,
-    pub index: u16,
+    pub caller: u16,
 } 
 
 #[repr (C)]
-pub struct Object<'a> {
-    pub instance: Option<&'a usize>,
-    pub adjust_items: Option<&'a [AdjustItem::<Branch>]>,
-    pub code: Option<&'a [u8]>,
-    pub flags: u32,
+pub struct Object {
+    pub reloc_items: Option<(u16, u16)>,
+    pub address: usize,
     pub size: u16,
+    pub index: u16,
 }
 
-impl<'a> Object<'a> {
-    #[inline]
-    pub fn get_instance_address(&self) -> Option<usize> {
-        match self.instance {
-            Some(address) => Some(*address),
-            _ => None,
-        }
+#[repr (C)]
+pub enum ObjectKind {
+    VectorTable(Object),
+    Function(Object),
+}
+
+impl Deref for Object {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { slice::from_raw_parts(self.address as *const u8, self.size as usize) }
     }
+} 
+
+impl Object {
+    pub fn get_instance_address(&self) -> usize {
+        let dispatch_tbl = unsafe { obj_tbl::DISPATCH_TBL.assume_init() };
+        dispatch_tbl[self.index as usize] as usize
+    }
+    
 
     #[inline]
-    pub fn get_address(&self) -> Option<usize> {
-        if let Some(code) = self.code {
-            Some(&code[0] as *const u8 as *const () as usize)
+    pub fn get_address(&self) -> usize {
+        self.address
+    }
+
+    pub fn get_instance(&self) -> Option<CodeBlock> {
+        let address = self.get_instance_address();
+        Some(unsafe { CodeBlock::from(address, self.size as usize) })
+    }
+
+    pub fn get_size(&self) -> usize {
+        self.size as usize
+    }
+
+    pub fn get_reloc_items(&self) -> Option<&[Branch]> {
+        if let Some(item) = self.reloc_items {
+            Some(&adj_tbl::BRANCHES[item.0 as usize.. item.1 as usize])
         } else {
             None
-        }
-    }
-
-    #[inline]
-    pub fn get_instance(&self, mem: &'a mut [u8]) -> CodeBlock {
-        let address = self.get_instance_address().unwrap();
-        let base = &mem[0] as *const u8 as *const () as usize;
-        let offset = address - base;
-
-        CodeBlock::from(&mut mem[offset .. offset + self.size()])
-    }
-
-    #[inline]
-    pub fn size(&self) -> usize {
-        if let Some(code) = self.code {
-            code.len()
-        } else {
-            0
         }
     }
 }

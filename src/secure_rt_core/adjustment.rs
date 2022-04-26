@@ -1,10 +1,4 @@
-pub struct Branch(pub u16, pub u16);
-
-#[repr (C)]
-pub struct AdjustItem<T> {
-    pub offset: u16,
-    pub item: T,
-}
+pub struct Branch(pub u16, pub u16, pub u16);
 
 fn encode_B_T4(src_addr: u32, dst_addr: u32) -> u32 {
     let offset: i32 = dst_addr as i32 - src_addr as i32 - 4;
