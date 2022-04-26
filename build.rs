@@ -115,8 +115,8 @@ fn generate_object_metadata() -> Result<(), Error> {
     dptbl_file.write_all("#ifndef DISPATCH_TBL_H\n".as_bytes())?;
     dptbl_file.write_all("#define DISPATCH_TBL_H\n".as_bytes())?;
     dptbl_file.write_all(format!("\n#define DISPATCH_TABLE_SIZE {}\n", objects.len()).as_bytes())?;
-    dptbl_file.write_all("#define DISPATCH_MAGIC 0xc0000000\n".as_bytes())?;
-    dptbl_file.write_all("#define DISPATCH_INDEX_BITS 14\n".as_bytes())?;
+    dptbl_file.write_all("#define DISPATCH_MAGIC 0x10000000\n".as_bytes())?;
+    dptbl_file.write_all("#define DISPATCH_INDEX_BITS 12\n".as_bytes())?;
     dptbl_file.write_all("#endif /* DISPATCH_TBL_H */\n".as_bytes())?;
 
     obj_file.write_all("use super::objects::{Object, ObjectKind};\n".as_bytes())?;
