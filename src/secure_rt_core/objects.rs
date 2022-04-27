@@ -36,8 +36,11 @@ impl Deref for Object {
 
 impl Object {
     pub fn get_instance_address(&self) -> usize {
-        let dispatch_tbl = unsafe { obj_tbl::DISPATCH_TBL.assume_init() };
-        dispatch_tbl[self.index as usize] as usize
+        // let dispatch_tbl = unsafe { obj_tbl::DISPATCH_TBL.assume_init() };
+        // dispatch_tbl[self.index as usize] as usize
+        unsafe {
+            obj_tbl::DISPATCH_TBL[self.index as usize] as usize
+        }
     }
     
 
@@ -49,6 +52,10 @@ impl Object {
     pub fn get_instance(&self) -> Option<CodeBlock> {
         let address = self.get_instance_address();
         Some(unsafe { CodeBlock::from(address, self.size as usize) })
+    }
+
+    pub fn get_origin_code(&self) -> Option<CodeBlock> {
+        Some(unsafe { CodeBlock::from(self.address, self.size as usize)})
     }
 
     pub fn get_size(&self) -> usize {

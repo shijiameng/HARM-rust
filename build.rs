@@ -43,7 +43,7 @@ struct ObjectInfo {
     reloc_items: Vec::<RelocInfo>,
     address: u32,
     size: u16, 
-    isr: u8,   
+    isr: u16,   
 }
 
 impl ObjectInfo {
@@ -124,7 +124,8 @@ fn generate_object_metadata() -> Result<(), Error> {
     obj_file.write_all("use core::mem::MaybeUninit;\n".as_bytes())?;
     obj_file.write_all(n_objs.as_bytes())?;
     obj_file.write_all("\n#[no_mangle]\n".as_bytes())?;
-    obj_file.write_all("pub static mut DISPATCH_TBL: MaybeUninit::<[u32; NUM_OF_OBJECTS]> = MaybeUninit::<[u32; NUM_OF_OBJECTS]>::uninit();\n".as_bytes())?;
+    // obj_file.write_all("pub static mut DISPATCH_TBL: MaybeUninit::<[u32; NUM_OF_OBJECTS]> = MaybeUninit::<[u32; NUM_OF_OBJECTS]>::uninit();\n".as_bytes())?;
+    obj_file.write_all("pub static mut DISPATCH_TBL: [u32; NUM_OF_OBJECTS] = [0u32; NUM_OF_OBJECTS];\n".as_bytes())?;
     obj_file.write_all("\n#[no_mangle]\n".as_bytes())?;
     obj_file.write_all("pub static OBJECTS: [ObjectKind; NUM_OF_OBJECTS] = [".as_bytes())?;
 
@@ -159,11 +160,11 @@ fn generate_object_metadata() -> Result<(), Error> {
     obj_file.write_all("\n];\n\n".as_bytes())?;
     obj_file.write_all(format!("pub const NUM_OF_VECTORS: usize = {};\n\n", vectors.len()).as_bytes())?;
     obj_file.write_all("#[no_mangle]\n".as_bytes())?;
-    obj_file.write_all("pub static VECTORS: [&ObjectKind; NUM_OF_VECTORS] = [".as_bytes())?;
+    obj_file.write_all("pub static VECTORS: [(&ObjectKind, u16); NUM_OF_VECTORS] = [".as_bytes())?;
 
     for v in vectors.iter() {
         let i = v.index;
-        obj_file.write_all(format!("\n\t&OBJECTS[{}],", i).as_bytes())?;
+        obj_file.write_all(format!("\n\t(&OBJECTS[{}], {}),", i, v.isr).as_bytes())?;
     }
 
     obj_file.write_all(format!("\n];\n").as_bytes())?;
@@ -201,6 +202,7 @@ fn main() -> Result<(), Error>{
         .file("c_lib/lpc55s69/board/peripherals.c")
         .file("c_lib/lpc55s69/board/pin_mux.c")
         .file("c_lib/lpc55s69/board/tzm_config.c")
+        .file("c_lib/lpc55s69/board/mpu_config.c")
         .file("c_lib/lpc55s69/device/system_LPC55S69_cm33_core0.c")
         .file("c_lib/lpc55s69/drivers/fsl_clock.c")
         .file("c_lib/lpc55s69/drivers/fsl_common.c")

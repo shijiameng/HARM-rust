@@ -10,7 +10,10 @@ product: TEE v3.0
 processor: LPC55S69
 package_id: LPC55S69JBD100
 mcu_data: ksdk2_0
-processor_version: 9.0.2
+processor_version: 10.0.1
+toolOptions:
+  _output_type_: c_code
+  _legacy_source_names_: 'yes'
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
 /* clang-format on */
 
@@ -23,6 +26,7 @@ processor_version: 9.0.2
 /***********************************************************************************************************************
  * Definitions
  **********************************************************************************************************************/
+
 /* SAU region boundaries */
 #define SAU_REGION_0_BASE 0
 #define SAU_REGION_0_END 0x0FFFFFFFU
@@ -31,11 +35,14 @@ processor_version: 9.0.2
 #define SAU_REGION_2_BASE 0x1001FE00U
 #define SAU_REGION_2_END 0x1001FFFFU
 
-
-
 /* clang-format off */
 /* TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
-tee:
+functional_group:
+- called_from_default_init: 'true'
+- id_prefix: ''
+- prefix_user_defined: 'true'
+- name: 'BOARD_InitTEE'
+- description: ''
 - ahb:
   - regions: [{memory: PROGRAM_FLASH, security: s_priv, start: '0x00000000', size: '0x00020000'}, {memory: PROGRAM_FLASH, security: ns_user, start: '0x00020000',
       size: '0x00080000'}, {memory: BootROM, security: s_priv, start: '0x00000000', size: '0x00020000'}, {memory: SRAMX, security: s_priv, start: '0x00000000', size: '0x00008000'},
@@ -73,23 +80,21 @@ tee:
       size: '0x00000020'}, {index: '6', enabled: 'false', security: ns, start: '0x00000000', size: '0x00000020'}, {index: '7', enabled: 'false', security: ns, start: '0x00000000',
       size: '0x00000020'}]
 - global_options:
-  - no:
-    - id: [AIRCR_PRIS, AIRCR_BFHFNMINS, AIRCR_SYSRESETREQS, SCR_SLEEPDEEPS, NSACR_CP2, NSACR_CP3, NSACR_CP4, NSACR_CP5, NSACR_CP6, NSACR_CP7, CPPWR_SU0, CPPWR_SUS0,
-      CPPWR_SU1, CPPWR_SUS1, CPPWR_SU2, CPPWR_SUS2, CPPWR_SU3, CPPWR_SUS3, CPPWR_SU4, CPPWR_SUS4, CPPWR_SU5, CPPWR_SUS5, CPPWR_SU6, CPPWR_SUS6, CPPWR_SU7, CPPWR_SUS7,
-      CPPWR_SU10, CPPWR_SUS10, CPPWR_SU11, CPPWR_SUS11, SEC_GPIO_MASK0_LOCK, SEC_GPIO_MASK1_LOCK, SEC_CPU1_INT_MASK0_LOCK, SEC_CPU1_INT_MASK1_LOCK, MASTER_SEC_LEVEL_LOCK,
-      CPU0_LOCK_NS_VTOR, CPU0_LOCK_NS_MPU, CPU0_LOCK_S_VTAIRCR, CPU0_LOCK_S_MPU, CPU0_LOCK_SAU, CPU0_LOCK_REG_LOCK, CPU1_LOCK_NS_VTOR, CPU1_LOCK_NS_MPU, CPU1_LOCK_REG_LOCK,
-      AHB_MISC_CTRL_REG_ENABLE_S_PRIV_CHECK, AHB_MISC_CTRL_REG_ENABLE_NS_PRIV_CHECK, AHB_MISC_CTRL_REG_DISABLE_VIOLATION_ABORT, AHB_MISC_CTRL_REG_DISABLE_SIMPLE_MASTER_STRICT_MODE,
-      AHB_MISC_CTRL_REG_DISABLE_SMART_MASTER_STRICT_MODE, AHB_MISC_CTRL_REG_IDAU_ALL_NS]
   - yes:
-    - id: [SHCSR_SECUREFAULTENA, NSACR_CP0, NSACR_CP1, NSACR_CP10, NSACR_CP11, AHB_MISC_CTRL_REG_ENABLE_SECURE_CHECKING, AHB_MISC_CTRL_REG_WRITE_LOCK, _legacy_source_names_]
-  - c_code:
-    - id: [_output_type_]
+    - id: [AIRCR_PRIS, SHCSR_SECUREFAULTENA, NSACR_CP0, NSACR_CP1, NSACR_CP10, NSACR_CP11, CPU0_LOCK_NS_MPU, AHB_MISC_CTRL_REG_ENABLE_SECURE_CHECKING, AHB_MISC_CTRL_REG_WRITE_LOCK]
+  - no:
+    - id: [AIRCR_BFHFNMINS, AIRCR_SYSRESETREQS, SCR_SLEEPDEEPS, NSACR_CP2, NSACR_CP3, NSACR_CP4, NSACR_CP5, NSACR_CP6, NSACR_CP7, CPPWR_SU0, CPPWR_SUS0, CPPWR_SU1,
+      CPPWR_SUS1, CPPWR_SU2, CPPWR_SUS2, CPPWR_SU3, CPPWR_SUS3, CPPWR_SU4, CPPWR_SUS4, CPPWR_SU5, CPPWR_SUS5, CPPWR_SU6, CPPWR_SUS6, CPPWR_SU7, CPPWR_SUS7, CPPWR_SU10,
+      CPPWR_SUS10, CPPWR_SU11, CPPWR_SUS11, SEC_GPIO_MASK0_LOCK, SEC_GPIO_MASK1_LOCK, SEC_CPU1_INT_MASK0_LOCK, SEC_CPU1_INT_MASK1_LOCK, MASTER_SEC_LEVEL_LOCK, CPU0_LOCK_NS_VTOR,
+      CPU0_LOCK_S_VTAIRCR, CPU0_LOCK_S_MPU, CPU0_LOCK_SAU, CPU0_LOCK_REG_LOCK, CPU1_LOCK_NS_VTOR, CPU1_LOCK_NS_MPU, CPU1_LOCK_REG_LOCK, AHB_MISC_CTRL_REG_ENABLE_S_PRIV_CHECK,
+      AHB_MISC_CTRL_REG_ENABLE_NS_PRIV_CHECK, AHB_MISC_CTRL_REG_DISABLE_VIOLATION_ABORT, AHB_MISC_CTRL_REG_DISABLE_SIMPLE_MASTER_STRICT_MODE, AHB_MISC_CTRL_REG_DISABLE_SMART_MASTER_STRICT_MODE,
+      AHB_MISC_CTRL_REG_IDAU_ALL_NS]
 - user_memory_regions: [{id: Region_1, security: s_priv, name: Secure Code, start: '0x10000000', size: '0x0001FE00'}, {id: Region_2, security: nsc_priv, name: Veneer
       Table, start: '0x1001FE00', size: '0x00000200'}, {id: Region_3, security: s_priv, name: Secure Stack and Data, start: '0x30010000', size: '0x0000A000'}, {id: Region_4,
     security: ns_user, name: Non-secure Code, description: Privilege check is disabled so reset value (NS-User) can be used, start: '0x00020000', size: '0x00070000'},
   {id: Region_5, security: ns_user, name: Non-secure Stack and Data, description: 'Privilege check is disabled so reset value (NS-User) can be used. ', start: '0x20000000',
     size: '0x00010000'}, {id: Region_6, security: s_priv, name: Global Region, start: '0x14000000', size: '0x00008000'}, {id: Region_7, security: ns_user, name: Sandbox1,
-    start: '0x2001A000', size: '0x0002A000'}]
+    start: '0x2001A000', size: '0x00015000'}, {id: Region_8, security: ns_user, name: Sandbox2, start: '0x2002F000', size: '0x00015000'}]
 - mpus:
   - mpu:
     - enabled: 'false'
@@ -127,6 +132,13 @@ tee:
         start: '0x00000000', size: '0x00000020'}]
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
 /* clang-format on */
+
+/* FUNCTION ************************************************************************************************************
+ *
+ * Function Name : BOARD_InitTEE
+ * Description   : 
+ *
+ * END ****************************************************************************************************************/
 
 /***********************************************************************************************************************
  * BOARD_InitTrustZone function
@@ -187,7 +199,7 @@ void BOARD_InitTrustZone()
         3    Secure, Privileged access allowed.
     */
 
-    /* Security level configuration of all checkers */
+    /* Security level configuration of MPC checker */
     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[0] = 0x00003333U;
     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[1] = 0;
     AHB_SECURE_CTRL->SEC_CTRL_FLASH_ROM[0].SEC_CTRL_FLASH_MEM_RULE[2] = 0;
@@ -206,21 +218,21 @@ void BOARD_InitTrustZone()
     AHB_SECURE_CTRL->SEC_CTRL_RAM3[0].MEM_RULE[1] = 0;
     AHB_SECURE_CTRL->SEC_CTRL_RAM4[0].MEM_RULE[0] = 0;
     AHB_SECURE_CTRL->SEC_CTRL_USB_HS[0].MEM_RULE[0] = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL0 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL1 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL2 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL0 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL1 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL2 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL3 = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE0_RULE = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE1_RULE = 0x00003000U;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE0_RULE = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE1_RULE = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE0_RULE = 0;
-    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE1_RULE = 0x00000030U;
-    /* Bits [25:24] have to be set to '1' according to UM. */
-    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL3 |= 0x3000000;
+
+    /* Security level configuration of PPC checker */
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL0 = 0xFCCCCCCCU;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL1 = 0xFCCCFFCCU;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE0_MEM_CTRL2 = 0xFFFFCFFFU;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL0 = 0xFFFFCFFCU;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL1 = 0xFFCCFCCCU;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL2 = 0xFFCCFFFFU;
+    AHB_SECURE_CTRL->SEC_CTRL_APB_BRIDGE[0].SEC_CTRL_APB_BRIDGE1_MEM_CTRL3 = 0xFFCFCCFCU;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE0_RULE = 0xCCCCFCFFU;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT8_SLAVE1_RULE = 0xFFFCFCCCU;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE0_RULE = 0xCCCCFFFFU;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT9_SLAVE1_RULE = 0xCFFCCFFCU;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE0_RULE = 0xCCCCCCFCU;
+    AHB_SECURE_CTRL->SEC_CTRL_AHB_PORT10[0].SLAVE1_RULE = 0xFFFFFFFCU;
 
     /* Security level configuration of masters */
     AHB_SECURE_CTRL->MASTER_SEC_LEVEL = 0x80000000U;
@@ -254,7 +266,7 @@ void BOARD_InitTrustZone()
     NVIC->ITNS[1] = 0x0FFFC47FU;
 
     /* Global Options */
-    SCB->AIRCR = (SCB->AIRCR & 0x000009FF7U) | 0x005FA0000U;
+    SCB->AIRCR = (SCB->AIRCR & 0x000009FF7U) | 0x005FA4000U;
     SCB->SCR &= 0x0FFFFFFF7U;
     SCB->SHCSR = (SCB->SHCSR & 0x0FFF7FFFFU) | 0x000080000U;
     SCB->NSACR = 0x00000C03U;
@@ -262,8 +274,16 @@ void BOARD_InitTrustZone()
     AHB_SECURE_CTRL->SEC_MASK_LOCK = 0x00000AAAU;
     AHB_SECURE_CTRL->MASTER_SEC_LEVEL = (AHB_SECURE_CTRL->MASTER_SEC_LEVEL & 0x03FFFFFFFU) | 0x080000000U;
     AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG = (AHB_SECURE_CTRL->MASTER_SEC_ANTI_POL_REG & 0x03FFFFFFFU) | 0x080000000U;
-    AHB_SECURE_CTRL->CPU0_LOCK_REG = 0x800002AAU;
+    AHB_SECURE_CTRL->CPU0_LOCK_REG = 0x800002A6U;
     AHB_SECURE_CTRL->CPU1_LOCK_REG = 0x8000000AU;
     AHB_SECURE_CTRL->MISC_CTRL_REG = (AHB_SECURE_CTRL->MISC_CTRL_REG & 0x0FFFF0003U) | 0x00000AAA4U;
     AHB_SECURE_CTRL->MISC_CTRL_DP_REG = 0x0000AAA5U;
+}
+
+/***********************************************************************************************************************
+ * BOARD_InitBootTEE function
+ **********************************************************************************************************************/
+void BOARD_InitBootTEE()
+{
+    BOARD_InitTrustZone();
 }

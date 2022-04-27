@@ -3,7 +3,6 @@ use core::slice::from_raw_parts_mut;
 use core::cmp::Ordering;
 
 use super::rb_tree::rb_tree::RBTree;
-
 // pub struct SandBox<'a> {
 //     rb_tree: RBTree<u32, &'a Object<'a>>,
 //     memory: &'a mut[u8],
@@ -84,7 +83,7 @@ impl<'a> SandBox<'a> {
         if let Ok(block) = self.get_block(obj.0.get_size() as usize, obj.1) {
             block.copy_from_slice(&**obj.0);
             let address = block as *const _ as *const u8 as usize;
-            self.index.put(address, object);
+            // self.index.put(address, object);
             Ok(address)
         } else {
             Err(())

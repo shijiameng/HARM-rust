@@ -25,7 +25,7 @@
 #include "fsl_rng.h"
 
 
-void BOARD_Initialize(void)
+void BOARD_Init(void)
 {
     BOARD_InitBootClocks();
     RNG_Init(RNG);
