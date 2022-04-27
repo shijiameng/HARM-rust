@@ -48,7 +48,7 @@ $ source harm/bin/activate
 Example, create an instrumented version of `qsort`:
 
 ```bash
-(harm) $ ./harm-rw -c secure_service_CMSE_lib.o -i samples/qsort.axf -p /path/to/metadata -o qsort.bin -e 0x20000
+(harm) $ ./harm-rw -c samples/secure_lib/libnsclib.o -i samples/qsort.axf -p /path/to/metadata -o qsort.bin -e 0x20000
 ```
 
 ### Troubleshooting
@@ -61,4 +61,53 @@ $ cp python/patches/libkeystone.so python/harm/lib/python3.8/site-packages/keyst
 
 ## Secure Runtime (Rust Prototype)
 
-Secure Runtime core has been implemented.
+### Hardware Requirement
+
+- NXP LPC55S69 Development Board (ARM Cortex-M33 with FPU and Seucrity Extension) [[Link]]([https://](https://www.nxp.com/design/development-boards/lpcxpresso-boards/lpcxpresso55s69-development-board:LPC55S69-EVK))
+- SEGGER J-Link [[Link]](https://www.segger.com/products/debug-probes/j-link/)
+
+### Software Requirement
+
+- JLinkExe: Flash firmware to the target board [[Link]](https://www.segger.com/downloads/jlink/)
+
+### Environment Setup
+
+Add toolchain for ARMv8-M
+
+```bash
+$ rustup target add thumbv8m.main-none-eabi
+```
+
+### How To Use
+
+1. Rewrite your firmware with `harm-rw`.
+2. Copy the generated metadata YAML files to `metadata` directory.
+3. Build the seure runtime
+   
+```bash
+$ cargo objdopy --release -- -O binary demo.bin  # demo.bin is the binary of the secure runtim
+```
+4. Flash the secure runtime binary and the rewritten target firmware binary to LPC55S69 with SEGGER J-Link
+
+```bash
+# Download the secure runtime and target firmware to LPC55S69
+# NOTE: replace XXXXX in the command line with your J-Link
+# Path of the secure runtime binary and firmware is included in the J-Link script (script.jlink and script_ns.jlink), please replace with yours
+
+# Download the secure runtime to LPC55S69
+$ /path/to/JLinkExe -if SWD -speed auto -commanderscript ./script.jlink -device LPC55S69_M33_0 -SelectEmuBySN XXXXX
+
+# Download the target firmware to LPC55S69
+$ /path/to/JLikExe -if SWD -speed auto -commanderscript ./script_ns.jlink -device LPC55S69_M33_0 -SelectEmuBySN XXXXX
+```
+
+### Limitations
+
+- Due to the poor support of TrustZone provided by `lpc55-hal` crate, we copied the HAL C code from NXP SDK and invoked via unsafe rust.
+- This work is still in progress.  
+
+### Publication
+
+This work has been accepted by 7th IEEE European Security and Privacy (Euro S&P'22).
+
+  - HARM: Hardware-assisted Continuous Re-randomization for Microcontrollers
