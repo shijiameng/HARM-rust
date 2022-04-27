@@ -1,0 +1,7 @@
+ExitOnError 1
+r
+h
+loadfile demo.bin 0x10000000 
+qc
+
+qc
