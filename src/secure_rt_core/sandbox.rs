@@ -3,17 +3,19 @@ use core::slice::from_raw_parts_mut;
 use core::cmp::Ordering;
 
 use super::rb_tree::rb_tree::RBTree;
-// pub struct SandBox<'a> {
-//     rb_tree: RBTree<u32, &'a Object<'a>>,
-//     memory: &'a mut[u8],
-//     next_i: usize,
-//     capacity: usize,
-// }
 
+/// Sandbox Struct
 pub struct SandBox<'a> {
+    /// the memory base of sandbox
     memory: &'a mut[u8],
+
+    /// pointer of next availiable address
     next_ptr: usize,
+
+    /// capacity of the sandbox
     capacity: usize,
+
+    /// An Red-Black Tree that used to index all functions
     index: RBTree<usize, &'a ObjectKind>,
 }
 
@@ -62,6 +64,7 @@ impl<'a> SandBox<'a> {
         let actual_size = block_base - self.next_ptr + block_size;
         let offset_i = block_base - self.get_base();
 
+        // allocate a block from the sandbox
         if self.capacity >= actual_size {
             self.capacity -= actual_size;
             self.next_ptr += actual_size;
@@ -79,6 +82,8 @@ impl<'a> SandBox<'a> {
                 if address & !3 == address { (obj, 2) } else { (obj, 1) }
             },
         };
+
+        // copy the object code to the sandbox
 
         if let Ok(block) = self.get_block(obj.0.get_size() as usize, obj.1) {
             block.copy_from_slice(&**obj.0);

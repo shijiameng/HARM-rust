@@ -39,13 +39,17 @@ fn main() -> ! {
     asm::nop(); // To not have main optimize to abort in release mode, remove when you add code
     unsafe { 
         ALLOCATOR.init(HEAP.as_ptr() as usize, HEAP_SIZE); 
+        // Initialize peripherals of LPC55s69
         BOARD_Init();
     }
     
+    // Initialize JLink RTT
     rtt_init_print!();
 
+    // Print out "hello world" to confirm RTT is working
     rprintln!("hello world");
-    
+
+    // Boot the firmware from the sandbox (sandbox is at 0x2001a000, size is 0x2a00 bytes)
     secure_rt_core::start(0x2001a000, 0x2a00);
 }
 
@@ -69,6 +73,7 @@ fn HardFault(_ef: &ExceptionFrame) -> ! {
 
 #[pre_init]
 unsafe fn before_main() {
+    // Enable TEE and MPU (i.e. Memory Protection Unit)
     BOARD_InitBootTEE();
     BOARD_InitMPU();
 }

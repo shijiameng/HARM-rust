@@ -12,11 +12,17 @@ pub struct Callsite {
     pub caller: u16,
 } 
 
+
+/// Object Description
 #[repr (C)]
 pub struct Object {
+    /// Branch instructions that need to be adjusted
     pub reloc_items: Option<(u16, u16)>,
+    /// Original address in the flash
     pub address: usize,
+    /// Object size
     pub size: u16,
+    /// Index of this object
     pub index: u16,
 }
 

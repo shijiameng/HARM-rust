@@ -3,7 +3,6 @@ pub mod sandbox;
 pub mod adjustment;
 pub mod codeblock;
 pub mod rb_tree;
-// extern crate alloc;
 
 use core::option::Option;
 use cortex_m;
@@ -12,11 +11,6 @@ use rtt_target::rprintln;
 mod obj_tbl;
 mod adj_tbl;
 mod ret_tbl;
-
-// pub mod adjustment;
-// pub mod objects;
-// pub mod sandbox;
-// pub mod codeblock;
 
 use sandbox::SandBox;
 use objects::*;
@@ -28,12 +22,12 @@ extern "C" {
 }
 
 fn get_shuffled_sequence<'a>() -> &'a [u16] {
-    // unsafe { &SHUFFLED_SEQUENCE[..] }
-
+    // shuffle all objects (functions and vector table)
     let mut i = unsafe { SHUFFLED_SEQUENCE.len() - 1 };
 
     while i > 0 {
         unsafe {
+            // get a random number from the RNG hardware
             let j = get_next_random_number() % (i + 1) as u32;
             let t = SHUFFLED_SEQUENCE[i];
             SHUFFLED_SEQUENCE[i as usize] = SHUFFLED_SEQUENCE[j as usize];
@@ -52,11 +46,13 @@ fn init() {
 }
 
 fn update_dispatch_table(index: usize, new_addr: usize) {
+    // update the address of each object
     unsafe { obj_tbl::DISPATCH_TBL[index] = new_addr as u32; }
 }
 
 fn update_vtor_register(offset: u32) {
     unsafe {
+        // set the VTOR (Vector Table Offset Register) as randomized address
         core::ptr::write_volatile(0xE002ED08 as *mut u32, offset);
     }
 }
@@ -66,6 +62,8 @@ fn shuffle(sbox: &mut SandBox, retaddr: Option<usize>) -> Option<usize> {
     let mut new_retaddr: Option<usize> = None;
 
     sbox.reset();
+
+    // Shuffle all objects
 
     for i in 0 .. seq.len() {
         let obj_i = seq[i] as usize;
@@ -104,6 +102,8 @@ fn do_adjust(object: &Object) {
     if reloc_items.is_none() {
         return;
     }
+
+    // rewrite all location-sensitive instructions (i.e. branch instructions)
 
     let mut cb = object.get_instance().unwrap();
     let adjust_items = reloc_items.unwrap();
@@ -192,13 +192,14 @@ pub fn start(sandbox_addr: usize, length: usize) -> ! {
         rprintln!("[SECURE] MSP_NS = 0x{:x}, VTOR_NS = 0x{:x}", msp as usize, ns_vector_tbl.get_instance_address());
         rprintln!("[SECURE] Booting normal world from 0x{:x}", ns_entry);
 
-        loop {}
-        // unsafe {
-        //     cortex_m::register::msp::write_ns(msp);
-        //     let ns_reset_vector = (ns_vector_inst.read32(4).unwrap() & !1) as u32;
-        //     cortex_m::asm::bx_ns(ns_reset_vector);
-        //     unreachable!();
-        // }
+        unsafe {
+            cortex_m::register::msp::write_ns(msp);
+            let ns_reset_vector = (ns_vector_inst.read32(4).unwrap() & !1) as u32;
+
+            // Jump to the sandbox and start running the firmware (use BXNS instruction)
+            cortex_m::asm::bx_ns(ns_reset_vector);
+            unreachable!();
+        }
     }
 
     rprintln!("[SECURE] Couldn't find entry of normal world.");

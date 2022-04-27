@@ -1,5 +1,9 @@
 pub struct Branch(pub u16, pub u16, pub u16);
 
+/// Rewrite Thumb-2 branch instructions
+///
+/// See: http://class.ece.iastate.edu/cpre288/resources/docs/Thumb-2SupplementReferenceManual.pdf (latest access: 4/26/2022)
+///  
 fn encode_B_T4(src_addr: u32, dst_addr: u32) -> u32 {
     let offset: i32 = dst_addr as i32 - src_addr as i32 - 4;
     let s: u32 = if offset < 0 { 1 } else { 0 };
