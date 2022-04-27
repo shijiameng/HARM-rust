@@ -63,7 +63,7 @@ $ cp python/patches/libkeystone.so python/harm/lib/python3.8/site-packages/keyst
 
 ### Hardware Requirement
 
-- NXP LPC55S69 Development Board (ARM Cortex-M33 with FPU and Seucrity Extension) [[Link]]([https://](https://www.nxp.com/design/development-boards/lpcxpresso-boards/lpcxpresso55s69-development-board:LPC55S69-EVK))
+- NXP LPC55S69 Development Board [[Link]](https://https://www.nxp.com/design/development-boards/lpcxpresso-boards/lpcxpresso55s69-development-board:LPC55S69-EVK)
 - SEGGER J-Link [[Link]](https://www.segger.com/products/debug-probes/j-link/)
 
 ### Software Requirement
@@ -106,7 +106,7 @@ $ /path/to/JLikExe -if SWD -speed auto -commanderscript ./script_ns.jlink -devic
 - Due to the poor support of TrustZone provided by `lpc55-hal` crate, we copied the HAL C code from NXP SDK and invoked via unsafe rust.
 - This work is still in progress.  
 
-### Publication
+## Publication
 
 This work has been accepted by 7th IEEE European Security and Privacy (Euro S&P'22).
 
